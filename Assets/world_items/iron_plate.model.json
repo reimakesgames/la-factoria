@@ -1,0 +1,14 @@
+{
+	"ClassName": "Model",
+	"Children": [
+		{
+			"ClassName": "Part",
+			"Name": "root",
+			"Properties": {
+				"Size": [1, 0.2, 1],
+				"Color": [0.8, 0.8, 0.8],
+				"Anchored": true
+			}
+		}
+	]
+}
