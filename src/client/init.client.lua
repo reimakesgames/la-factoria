@@ -5,15 +5,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
-type Array<T> = { [number]: T }
-type Dictionary<T> = { [string]: T }
-type Map<T, U> = { [T]: U }
-
 local LocalPlayer = Players.LocalPlayer
 
 local Assets = ReplicatedStorage.Assets
+local Shared = ReplicatedStorage.Shared
 
 local Conveyor = Assets.buildings.conveyor_1
+
+local map = require(Shared.map)
 
 local SlotNumber = nil
 local SelectedItem = nil -- a pointer to a class
@@ -22,12 +21,20 @@ local GhostItem = nil -- the ghost item that will be placed
 local Rotation = 4
 
 -- the shortcut of items
-local ShortcutBar: Array<Model> = {
+-- TODO: make this a table of classes instead
+local ShortcutBar: { [number]: Model } = {
 	Conveyor
 }
 
 -- this is the function that will be called every frame
 local Mouse = LocalPlayer:GetMouse()
+
+local function GetTilePositionFromMouse(): Vector2
+	local MouseHit = Mouse.Hit
+	local x = math.floor((MouseHit.Position.X) / 4)
+	local z = math.floor((MouseHit.Position.Z) / 4)
+	return Vector2.new(x, z)
+end
 
 local function PlacementCFrame(): CFrame
 	local MouseHit = Mouse.Hit
@@ -38,8 +45,13 @@ end
 
 local function PlaceObject(selectedItem)
 	local placedItem = selectedItem:Clone()
-	placedItem.Parent = workspace
+	local tilePosition = GetTilePositionFromMouse()
 	placedItem:PivotTo(PlacementCFrame())
+	--TODO: make placedItem a class as opposed to a model
+	-- this'll allow to store metadata about the item, such as rotation number,
+	-- and/or info like stored items, crafting progress, and so on
+	map:WriteTile(tilePosition.X, tilePosition.Y, placedItem)
+	placedItem.Parent = workspace
 end
 
 local function Deselect()
@@ -48,13 +60,31 @@ local function Deselect()
 	SelectedItemModelHeight = 0
 end
 
-local function Pick(position)
+local function Pick()
 	--TODO: add the position to find the item in the world
 
 	-- if the hit position is 'empty' then deselect
 	-- else select the hovered item alongside it's rotation
 
-	Deselect()
+	local tilePosition = GetTilePositionFromMouse()
+	print("picking tile at " .. tilePosition.X .. ", " .. tilePosition.Y)
+	local tile = map:AccessTile(tilePosition.X, tilePosition.Y)
+	if tile then
+		-- find the item in the shortcut bar by comparing names
+		print(tile.Name)
+		for i, item in ShortcutBar do
+			if item.Name == tile.Name then
+				SlotNumber = i
+				SelectedItem = item
+				local _ItemCFrame, ItemSize = SelectedItem:GetBoundingBox()
+				SelectedItemModelHeight = ItemSize.Y
+				print("Selected item: " .. SelectedItem.Name)
+				return
+			end
+		end
+	else
+		Deselect()
+	end
 end
 
 RunService.Heartbeat:Connect(function()
