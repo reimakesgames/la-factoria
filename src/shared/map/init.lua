@@ -25,11 +25,21 @@ function map:WriteTile(x, y, tile)
 	local chunk = mapIndex[chunkX .. "," .. chunkY]
 
 	if not chunk then
-		chunk = Chunk.new()
+		chunk = Chunk.new(Vector2.new(chunkX, chunkY))
 		mapIndex[chunkX .. "," .. chunkY] = chunk
 	end
 
 	chunk:WriteTile(x % 32, y % 32, tile)
+end
+
+function map:GetChunk(position)
+	position = Vector2.new(math.floor(position.X / 32), math.floor(position.Y / 32))
+	local chunk = mapIndex[position.X .. "," .. position.Y]
+	if not chunk then
+		chunk = Chunk.new(position)
+		mapIndex[position.X .. "," .. position.Y] = chunk
+	end
+	return chunk
 end
 
 return map

@@ -10,20 +10,22 @@ local LocalPlayer = Players.LocalPlayer
 local Assets = ReplicatedStorage.Assets
 local Shared = ReplicatedStorage.Shared
 
-local Conveyor = Assets.buildings.conveyor_1
-
 local map = require(Shared.map)
+local bitTools = require(script.bitTools)
+local Tile = require(script.Tile)
+local tileLookupTable = require(script.tileLookupTable)
 
 local SlotNumber = nil
 local SelectedItem = nil -- a pointer to a class
+local SelectedItemModel
 local SelectedItemModelHeight = 0 -- the height of the model, must be set when an item is selected
 local GhostItem = nil -- the ghost item that will be placed
 local Rotation = 4
 
 -- the shortcut of items
 -- TODO: make this a table of classes instead
-local ShortcutBar: { [number]: Model } = {
-	Conveyor
+local ShortcutBar: { [number]: number } = {
+	1
 }
 
 -- this is the function that will be called every frame
@@ -44,14 +46,16 @@ local function PlacementCFrame(): CFrame
 end
 
 local function PlaceObject(selectedItem)
-	local placedItem = selectedItem:Clone()
 	local tilePosition = GetTilePositionFromMouse()
-	placedItem:PivotTo(PlacementCFrame())
-	--TODO: make placedItem a class as opposed to a model
-	-- this'll allow to store metadata about the item, such as rotation number,
-	-- and/or info like stored items, crafting progress, and so on
-	map:WriteTile(tilePosition.X, tilePosition.Y, placedItem)
-	placedItem.Parent = workspace
+	local chunk = map:GetChunk(tilePosition)
+	local tilePositionInChunk = tilePosition - (chunk.Position * 32)
+	if chunk:AccessTile(tilePositionInChunk.X, tilePositionInChunk.Y) then
+		warn("There is already a tile here!")
+		return
+	end
+
+	local tile = Tile.new(chunk, selectedItem, Rotation, tilePositionInChunk.X, tilePositionInChunk.Y)
+	map:WriteTile(tilePosition.X, tilePosition.Y, tile)
 end
 
 local function Deselect()
@@ -67,18 +71,20 @@ local function Pick()
 	-- else select the hovered item alongside it's rotation
 
 	local tilePosition = GetTilePositionFromMouse()
+
 	print("picking tile at " .. tilePosition.X .. ", " .. tilePosition.Y)
 	local tile = map:AccessTile(tilePosition.X, tilePosition.Y)
 	if tile then
 		-- find the item in the shortcut bar by comparing names
-		print(tile.Name)
+		print(tile.TileId)
 		for i, item in ShortcutBar do
-			if item.Name == tile.Name then
+			if item == tile.TileId then
 				SlotNumber = i
 				SelectedItem = item
-				local _ItemCFrame, ItemSize = SelectedItem:GetBoundingBox()
+				SelectedItemModel = Assets.buildings:FindFirstChild(tileLookupTable[SelectedItem]) :: Model
+				local _ItemCFrame, ItemSize = SelectedItemModel:GetBoundingBox()
 				SelectedItemModelHeight = ItemSize.Y
-				print("Selected item: " .. SelectedItem.Name)
+				print("Selected item: " .. tileLookupTable[SelectedItem])
 				return
 			end
 		end
@@ -90,7 +96,7 @@ end
 RunService.Heartbeat:Connect(function()
 	if SelectedItem then
 		if not GhostItem then
-			GhostItem = SelectedItem:Clone()
+			GhostItem = SelectedItemModel:Clone()
 			GhostItem.Parent = workspace
 			for _, part in GhostItem:GetDescendants() do
 				if part:IsA("BasePart") then
@@ -139,15 +145,19 @@ UserInputService.InputBegan:Connect(function(input)
 
 		-- Selection
 		local Item = ShortcutBar[index]
+		print("Selected item: " .. tileLookupTable[Item])
 		if not Item then
 			return
 		end
 		SlotNumber = index
 
-		local _ItemCFrame, ItemSize = Item:GetBoundingBox()
+		SelectedItemModel = Assets.buildings:FindFirstChild(tileLookupTable[Item]) :: Model
+		local _ItemCFrame, ItemSize = SelectedItemModel:GetBoundingBox()
 		SelectedItemModelHeight = ItemSize.Y
 		SelectedItem = ShortcutBar[index]
-		print("Selected item: " .. Item.Name)
+		print("Selected item: " .. tileLookupTable[SelectedItem])
 		-- TODO: fire a signal here
 	end
 end)
+
+require(script.chunkDisplayer)
