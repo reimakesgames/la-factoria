@@ -14,6 +14,7 @@ local map = require(Shared.map)
 local bitTools = require(script.bitTools)
 local Tile = require(script.Tile)
 local tileLookupTable = require(script.tileLookupTable)
+local tileSizes = require(script.tileSizes)
 
 local SlotNumber = nil
 local SelectedItem = nil -- a pointer to a class
@@ -22,10 +23,15 @@ local SelectedItemModelHeight = 0 -- the height of the model, must be set when a
 local GhostItem = nil -- the ghost item that will be placed
 local Rotation = 4
 
+local Dragging = false
+local PreviousTilePosition = nil
+
 -- the shortcut of items
 -- TODO: make this a table of classes instead
 local ShortcutBar: { [number]: number } = {
-	1
+	1,
+	7,
+	29,
 }
 
 -- this is the function that will be called every frame
@@ -40,9 +46,17 @@ end
 
 local function PlacementCFrame(): CFrame
 	local MouseHit = Mouse.Hit
-	local x = math.floor((MouseHit.Position.X) / 4) * 4
-	local z = math.floor((MouseHit.Position.Z) / 4) * 4
-	return CFrame.new(x + 2, SelectedItemModelHeight / 2, z + 2) * CFrame.Angles(0, math.rad(Rotation * 90), 0)
+	local tileSize = tileSizes[tileLookupTable[SelectedItem]]
+	local sxOffset = tileSize.X
+	local syOffset = tileSize.Y
+	if Rotation == 1 or Rotation == 3 then
+		sxOffset, syOffset = syOffset, sxOffset
+	end
+	local x = (math.floor(MouseHit.Position.X / 4) * 4)
+	local z = (math.floor(MouseHit.Position.Z / 4) * 4)
+	x = x + (sxOffset * 2)
+	z = z + (syOffset * 2)
+	return CFrame.new(x, SelectedItemModelHeight / 2, z) * CFrame.Angles(0, math.rad(Rotation * 90), 0)
 end
 
 local function PlaceObject(selectedItem)
@@ -54,14 +68,16 @@ local function PlaceObject(selectedItem)
 		return
 	end
 
-	local tile = Tile.new(chunk, selectedItem, Rotation, tilePositionInChunk.X, tilePositionInChunk.Y)
-	map:WriteTile(tilePosition.X, tilePosition.Y, tile)
+	local tileSize = tileSizes[tileLookupTable[selectedItem]]
+	Tile.new(chunk, selectedItem, Rotation, tilePositionInChunk.X, tilePositionInChunk.Y, tileSize.X, tileSize.Y)
 end
 
 local function Deselect()
 	SlotNumber = nil
 	SelectedItem = nil
 	SelectedItemModelHeight = 0
+	GhostItem:Destroy()
+	GhostItem = nil
 end
 
 local function Pick()
@@ -79,6 +95,7 @@ local function Pick()
 		print(tile.TileId)
 		for i, item in ShortcutBar do
 			if item == tile.TileId then
+				Rotation = tile.Rotation
 				SlotNumber = i
 				SelectedItem = item
 				SelectedItemModel = Assets.buildings:FindFirstChild(tileLookupTable[SelectedItem]) :: Model
@@ -93,16 +110,20 @@ local function Pick()
 	end
 end
 
+local function CreateCursorBlockGhost()
+	GhostItem = SelectedItemModel:Clone()
+	GhostItem.Parent = workspace
+	for _, part in GhostItem:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Transparency = 0.5
+		end
+	end
+end
+
 RunService.Heartbeat:Connect(function()
 	if SelectedItem then
 		if not GhostItem then
-			GhostItem = SelectedItemModel:Clone()
-			GhostItem.Parent = workspace
-			for _, part in GhostItem:GetDescendants() do
-				if part:IsA("BasePart") then
-					part.Transparency = 0.5
-				end
-			end
+			CreateCursorBlockGhost()
 		end
 
 		GhostItem:PivotTo(PlacementCFrame())
@@ -112,11 +133,23 @@ RunService.Heartbeat:Connect(function()
 			GhostItem = nil
 		end
 	end
+
+	if Dragging then
+		if SelectedItem then
+			if PreviousTilePosition ~= GetTilePositionFromMouse() then
+				PlaceObject(SelectedItem)
+			end
+		end
+	end
+	PreviousTilePosition = GetTilePositionFromMouse()
 end)
 
 UserInputService.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 and SelectedItem then
-		PlaceObject(SelectedItem)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		Dragging = true
+		if SelectedItem then
+			PlaceObject(SelectedItem)
+		end
 	end
 
 	if input.KeyCode == Enum.KeyCode.R then
@@ -149,14 +182,26 @@ UserInputService.InputBegan:Connect(function(input)
 		if not Item then
 			return
 		end
+		if GhostItem then
+			GhostItem:Destroy()
+			GhostItem = nil
+		end
+
 		SlotNumber = index
 
 		SelectedItemModel = Assets.buildings:FindFirstChild(tileLookupTable[Item]) :: Model
 		local _ItemCFrame, ItemSize = SelectedItemModel:GetBoundingBox()
 		SelectedItemModelHeight = ItemSize.Y
 		SelectedItem = ShortcutBar[index]
+		CreateCursorBlockGhost()
 		print("Selected item: " .. tileLookupTable[SelectedItem])
 		-- TODO: fire a signal here
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		Dragging = false
 	end
 end)
 
