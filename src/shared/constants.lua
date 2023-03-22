@@ -1,0 +1,4 @@
+return {
+	STUDS_PER_TILE = 4,
+	TILES_PER_CHUNK = 32,
+}
