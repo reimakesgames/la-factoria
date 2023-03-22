@@ -1,3 +1,5 @@
+--!optimize 2
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
