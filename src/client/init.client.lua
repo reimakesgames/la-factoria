@@ -16,13 +16,8 @@ local buildingDimensions = require(script.buildingDimensions)
 local LocalPlayer = Players.LocalPlayer
 
 local Mouse = LocalPlayer:GetMouse()
-local GhostStructure = SplitterBase:Clone()
-for _, child in pairs(GhostStructure:GetDescendants()) do
-	if child:IsA("BasePart") then
-		child.Transparency = 0.5
-	end
-end
-GhostStructure.Parent = workspace
+local GhostStructure
+local t1 = false
 
 local function GetPlacementCFrame(dim: Vector2)
 	local IsXEven = dim.X % 2 == 0
@@ -44,7 +39,41 @@ local function PlaceBuilding()
 end
 
 local function UpdateGhostStructure()
-	GhostStructure:PivotTo(GetPlacementCFrame(Vector2.new(2, 1)))
+	if not GhostStructure then return end
+
+	GhostStructure:PivotTo(GetPlacementCFrame(buildingDimensions[if t1 then "assembling_machine_1" else "splitter"]))
 end
 
+local function ToggleGhostStructure()
+	if GhostStructure then
+		GhostStructure:Destroy()
+		GhostStructure = nil
+	end
+
+	if t1 then
+		GhostStructure = AssemblerBase:Clone()
+	else
+		GhostStructure = SplitterBase:Clone()
+	end
+
+	for _, v in pairs(GhostStructure:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.Transparency = 0.5
+		end
+	end
+
+	GhostStructure:PivotTo(GetPlacementCFrame(buildingDimensions[if t1 then "assembling_machine_1" else "splitter"]))
+	GhostStructure.Parent = workspace
+end
+
+
 RunService.Heartbeat:Connect(UpdateGhostStructure)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+
+	if input.KeyCode == Enum.KeyCode.E then
+		t1 = not t1
+		ToggleGhostStructure()
+	end
+end)
