@@ -56,14 +56,18 @@
     "Lighting": {
       "$properties": {
         "Ambient": [
-          0.25,
-          0.25,
-          0.25
+          0,
+          0,
+          0
+        ],
+        "OutdoorAmbient": [
+          0,
+          0,
+          0
         ],
         "Brightness": 2,
         "GlobalShadows": true,
-        "Outlines": true,
-        "Technology": "Future"
+        "Technology": {"Enum": 4}
       }
     }
   }
