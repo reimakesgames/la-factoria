@@ -10,10 +10,6 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local Buildings = Assets.buildings
-local AssemblerBase = Buildings.assembler_base
-local SplitterBase = Buildings.splitter_base
-
 local constants = require(Shared.constants)
 local fastInstance = require(Shared.fastInstance)
 
@@ -44,11 +40,22 @@ local BuildingGui = fastInstance.new("ScreenGui", {
 
 local Mouse = LocalPlayer:GetMouse()
 local GhostStructure
+local SelectedInventorySlot = nil
 local SelectedBuildingModel
 local SelectedBuildingId
 local SelectedBuildingName
 local CantPlaceBuilding = false
-local t1 = false
+
+local Inventory = {
+	{
+		Name = "wooden_chest",
+		Count = 7,
+	},
+	{
+		Name = "wooden_chest",
+		Count = 2,
+	}
+}
 
 local function AddHardHat(character)
 	local hat = Assets.hard_hat:Clone()
@@ -87,14 +94,6 @@ local function GetPlacementCFrame(dim: Vector2)
 	return CFrame.new(SnapPosition) -- Add rotation
 end
 
-local function PlaceBuilding()
-	if not SelectedBuildingId then return end
-
-	local NewBuilding = SelectedBuildingModel:Clone()
-	NewBuilding:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
-	NewBuilding.Parent = workspace
-end
-
 local function UpdateGhostStructure()
 	if not GhostStructure then return end
 
@@ -107,16 +106,13 @@ local function ToggleGhostStructure()
 		GhostStructure = nil
 	end
 
-	if t1 then
-		GhostStructure = AssemblerBase:Clone()
-	else
-		GhostStructure = SplitterBase:Clone()
-	end
+	if not SelectedBuildingId then return end
+	GhostStructure = SelectedBuildingModel:Clone()
 
 	GhostStructure:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
 
 	-- create a blue floor under the ghost structure
-	local buildingSize = buildingDimensions[if t1 then "assembling_machine_1" else "splitter"] * constants.STUDS_PER_TILE
+	local buildingSize = buildingDimensions[SelectedBuildingName] * constants.STUDS_PER_TILE
 	local floor = fastInstance.new("Part", {
 		Name = "GhostStructureFloor",
 		Anchored = true,
@@ -129,6 +125,31 @@ local function ToggleGhostStructure()
 	GhostStructure.Parent = BuildingGui.ViewportFrame
 end
 
+local function DeselectBuilding()
+	SelectedBuildingId = nil
+	SelectedBuildingName = nil
+	SelectedBuildingModel:Destroy()
+	SelectedBuildingModel = nil
+
+	ToggleGhostStructure()
+end
+
+local function PlaceBuilding()
+	if not SelectedBuildingId then return end
+
+	Inventory[SelectedInventorySlot].Count -= 1
+	print("you placed a building! and now you have", Inventory[SelectedInventorySlot].Count, "left")
+	local NewBuilding = SelectedBuildingModel:Clone()
+	NewBuilding:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
+	NewBuilding.Parent = workspace
+	if Inventory[SelectedInventorySlot].Count < 1 then
+		DeselectBuilding()
+		-- remove the slot from the inventory
+		table.clear(Inventory[SelectedInventorySlot])
+		warn("no more building! bwekh! (°<°)")
+		return
+	end
+end
 
 RunService.Heartbeat:Connect(function()
 	UpdateTimeOfDay()
@@ -139,13 +160,43 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
-	if input.KeyCode == Enum.KeyCode.E then
-		t1 = not t1
-		SelectedBuildingName = if t1 then "assembling_machine_1" else "splitter"
-		SelectedBuildingModel = if t1 then AssemblerBase else SplitterBase
-		SelectedBuildingId = buildingIds[SelectedBuildingName]
-		ToggleGhostStructure()
-	elseif input.KeyCode == Enum.KeyCode.R then
+	-- get the slot number from the key pressed from 1 to 0 in keyboard
+	local slotNumber
+	if input.KeyCode.Value >= 48 and input.KeyCode.Value <= 57 then
+		slotNumber = input.KeyCode.Value - 48
+		-- since 0 is 48 and not 57, we need to do this
+		if slotNumber == 0 then
+			slotNumber = 10
+		end
+		if SelectedInventorySlot == slotNumber then
+			slotNumber = nil
+			SelectedInventorySlot = nil
+
+			SelectedBuildingId = nil
+			SelectedBuildingName = nil
+			SelectedBuildingModel:Destroy()
+			SelectedBuildingModel = nil
+			ToggleGhostStructure()
+		else
+			SelectedInventorySlot = slotNumber
+		end
+	end
+
+	if slotNumber then
+		print("slot number", slotNumber)
+		local buildingItem = Inventory[slotNumber]
+		if not buildingItem then return end
+		local buildingId = buildingIds[buildingItem.Name]
+		print("building name", buildingItem.Name)
+		if buildingId then
+			SelectedBuildingId = buildingId
+			SelectedBuildingName = buildingItem.Name
+			SelectedBuildingModel = Assets.buildings[buildingItem.Name]:Clone()
+			ToggleGhostStructure()
+		end
+	end
+
+	if input.KeyCode == Enum.KeyCode.R then
 		CantPlaceBuilding = not CantPlaceBuilding
 	end
 
