@@ -6,10 +6,13 @@ local UserInputService = game:GetService('UserInputService')
 
 local Assets = ReplicatedStorage.Assets
 local Shared = ReplicatedStorage.Shared
+local Proto = Shared.proto
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+local logic = require(ReplicatedStorage.Shared.logic)
+local util = require(Shared.util)
 local constants = require(Shared.constants)
 local fastInstance = require(Shared.fastInstance)
 
@@ -37,6 +40,24 @@ local BuildingGui = fastInstance.new("ScreenGui", {
 		}
 	}
 })
+local HoverHighlight = fastInstance.new("Highlight", {
+	Name = "HoverHighlight",
+	Parent = BuildingGui,
+	Adornee = nil,
+	FillTransparency = 1,
+	OutlineTransparency = 0,
+	FillColor = Color3.new(1, 0.6, 0),
+	OutlineColor = Color3.new(1, 0.6, 0),
+})
+local SelectedHighlight = fastInstance.new("Highlight", {
+	Name = "SelectedHighlight",
+	Parent = BuildingGui,
+	Adornee = nil,
+	FillTransparency = 0.5,
+	OutlineTransparency = 0,
+	FillColor = Color3.new(1, 0.6, 0),
+	OutlineColor = Color3.new(1, 0.6, 0),
+})
 
 local Mouse = LocalPlayer:GetMouse()
 local GhostStructure
@@ -45,6 +66,11 @@ local SelectedBuildingModel
 local SelectedBuildingId
 local SelectedBuildingName
 local CantPlaceBuilding = false
+
+local BuildingUnderMouse = nil
+local UniqueBuildingIdUnderMouse = nil
+
+local RecentInteraction = nil
 
 local Inventory = {
 	{
@@ -74,6 +100,21 @@ local function UpdateBuildingGui()
 	BuildingGui.ViewportFrame.ImageColor3 = if CantPlaceBuilding then Color3.new(1, 0.5, 0.5) else Color3.new(1, 1, 1)
 end
 
+local function FindTileUnderMouse()
+	local tx, ty = util:GetTileFromV3(Mouse.Hit.Position)
+	local tile = logic:GetTile(tx, ty)
+	UniqueBuildingIdUnderMouse = tile
+	BuildingUnderMouse = logic:GetBuilding(tile)
+end
+
+local function HighlightBuildingUnderMouse()
+	if BuildingUnderMouse and RecentInteraction ~= BuildingUnderMouse then
+		HoverHighlight.Adornee = BuildingUnderMouse.Model
+	else
+		HoverHighlight.Adornee = nil
+	end
+end
+
 local CLOCK_TIME_TO_ADD_PER_TICK = 24 / 25000
 local function UpdateTimeOfDay()
 	Lighting.ClockTime = Lighting.ClockTime + CLOCK_TIME_TO_ADD_PER_TICK
@@ -82,13 +123,13 @@ end
 local function GetPlacementCFrame(dim: Vector2)
 	local IsXEven = dim.X % 2 == 0
 	local IsYEven = dim.Y % 2 == 0
-	local CenterOffset = Vector3.new(math.floor(dim.X / 2), 0, math.floor(dim.Y / 2)) * constants.STUDS_PER_TILE
+	local CenterOffset = Vector3.new(math.floor(dim.X / 2), 0, math.floor(dim.Y / 2)) * constants.TILE_SIZE
 	local SnappingOffset = Vector3.new(IsXEven and 2 or 0, 0, IsYEven and 2 or 0)
 	local MousePosition = Mouse.Hit.Position + SnappingOffset - CenterOffset
 
-	local CenterPositionInStuds = (dim / 2) * constants.STUDS_PER_TILE
-	local SnappedX = math.floor(MousePosition.X / constants.STUDS_PER_TILE) * constants.STUDS_PER_TILE + CenterPositionInStuds.X
-	local SnappedY = math.floor(MousePosition.Z / constants.STUDS_PER_TILE) * constants.STUDS_PER_TILE + CenterPositionInStuds.Y
+	local CenterPositionInStuds = (dim / 2) * constants.TILE_SIZE
+	local SnappedX = math.floor(MousePosition.X / constants.TILE_SIZE) * constants.TILE_SIZE + CenterPositionInStuds.X
+	local SnappedY = math.floor(MousePosition.Z / constants.TILE_SIZE) * constants.TILE_SIZE + CenterPositionInStuds.Y
 	local SnapPosition = Vector3.new(SnappedX, 0, SnappedY)
 
 	return CFrame.new(SnapPosition) -- Add rotation
@@ -112,7 +153,7 @@ local function ToggleGhostStructure()
 	GhostStructure:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
 
 	-- create a blue floor under the ghost structure
-	local buildingSize = buildingDimensions[SelectedBuildingName] * constants.STUDS_PER_TILE
+	local buildingSize = buildingDimensions[SelectedBuildingName] * constants.TILE_SIZE
 	local floor = fastInstance.new("Part", {
 		Name = "GhostStructureFloor",
 		Anchored = true,
@@ -137,10 +178,13 @@ end
 local function PlaceBuilding()
 	if not SelectedBuildingId then return end
 
+	local tx, ty = util:GetTileFromV3(Mouse.Hit.Position)
+
 	Inventory[SelectedInventorySlot].Count -= 1
 	print("you placed a building! and now you have", Inventory[SelectedInventorySlot].Count, "left")
 	local NewBuilding = SelectedBuildingModel:Clone()
 	NewBuilding:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
+	logic:NewTile(tx, ty, Proto[SelectedBuildingName], NewBuilding)
 	NewBuilding.Parent = workspace
 	if Inventory[SelectedInventorySlot].Count < 1 then
 		DeselectBuilding()
@@ -155,6 +199,8 @@ RunService.Heartbeat:Connect(function()
 	UpdateTimeOfDay()
 	UpdateBuildingGui()
 	UpdateGhostStructure()
+	FindTileUnderMouse()
+	HighlightBuildingUnderMouse()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -174,7 +220,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
 			SelectedBuildingId = nil
 			SelectedBuildingName = nil
-			SelectedBuildingModel:Destroy()
+			if SelectedBuildingModel then
+				SelectedBuildingModel:Destroy()
+			end
 			SelectedBuildingModel = nil
 			ToggleGhostStructure()
 		else
@@ -198,10 +246,30 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 
 	if input.KeyCode == Enum.KeyCode.R then
 		CantPlaceBuilding = not CantPlaceBuilding
+	elseif input.KeyCode == Enum.KeyCode.E then
+		if RecentInteraction then
+			RecentInteraction:Unfocus()
+		end
+		RecentInteraction = nil
+		SelectedHighlight.Adornee = nil
 	end
 
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		PlaceBuilding()
+		if SelectedBuildingId then
+			PlaceBuilding()
+		else
+			if BuildingUnderMouse then
+				print("you clicked on a building!")
+				if BuildingUnderMouse["Interact"] then
+					if RecentInteraction then
+						RecentInteraction:Unfocus()
+					end
+					BuildingUnderMouse:Interact()
+					RecentInteraction = BuildingUnderMouse
+					SelectedHighlight.Adornee = BuildingUnderMouse.Model
+				end
+			end
+		end
 	end
 end)
 
