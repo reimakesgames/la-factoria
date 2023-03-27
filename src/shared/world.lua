@@ -4,35 +4,35 @@ local buildings = {}
 
 local CurrentUniqueBuildingId = 0
 
-local logic = {
-	world = {}
+local world = {
+	map = {}
 }
 
 export type Chunk = {
 	[number]: number -- unique building id
 }
 
-function logic:GetChunk(x, y)
-	if self.world[x] then
-		return self.world[x][y]
+function world:GetChunk(x, y)
+	if self.map[x] then
+		return self.map[x][y]
 	end
 	return nil
 end
 
-function logic:NewChunk(x, y)
-	if self.world[x] then
-		if self.world[x][y] then
+function world:NewChunk(x, y)
+	if self.map[x] then
+		if self.map[x][y] then
 			warn("Attempted to create Chunk at <" .. x .. ", " .. y .. ">, but it already exists!")
 		end
 	end
 
-	if not self.world[x] then
-		self.world[x] = {}
+	if not self.map[x] then
+		self.map[x] = {}
 	end
-	self.world[x][y] = {}
+	self.map[x][y] = {}
 end
 
-function logic:NewTile(x, y, buildingClassModule, associatedModel)
+function world:NewTile(x, y, buildingClassModule, associatedModel)
 	local chunkX, chunkY, localTile = util:GetChunkAndLocalTileFromXY(x, y)
 	local chunk = self:GetChunk(chunkX, chunkY)
 	if not chunk then
@@ -48,7 +48,7 @@ function logic:NewTile(x, y, buildingClassModule, associatedModel)
 	print("New tile created at <" .. x .. ", " .. y .. "> with building id " .. building.UniqueBuildingId)
 end
 
-function logic:GetBuilding(uniqueBuildingId)
+function world:GetBuilding(uniqueBuildingId)
 	return buildings[uniqueBuildingId]
 end
 
@@ -56,7 +56,7 @@ end
 	This function will return the building at the tile position.
 	It requires the tile position.
 ]]
-function logic:GetTile(x, y)
+function world:GetTile(x, y)
 	-- Index the chunk by doing (y * 32) + x + 1
 	-- though get the chunk first
 
@@ -68,9 +68,9 @@ function logic:GetTile(x, y)
 	return nil
 end
 
-function logic:_LoadChunk(x, y, data)
-	if self.world[x] then
-		if self.world[x][y] then
+function world:_LoadChunk(x, y, data)
+	if self.map[x] then
+		if self.map[x][y] then
 			warn("Attempted to load Chunk at <" .. x .. ", " .. y .. ">, but it already exists!")
 		end
 	end
@@ -78,12 +78,12 @@ function logic:_LoadChunk(x, y, data)
 	-- TODO: load json table into chunk and load its tiles
 end
 
-function logic:_SaveChunk(x, y)
-	if not self.world[x] then
+function world:_SaveChunk(x, y)
+	if not self.map[x] then
 		warn("Attempted to save Chunk at <" .. x .. ", " .. y .. ">, but it doesn't exist!")
 		return
 	end
-	if not self.world[x][y] then
+	if not self.map[x][y] then
 		warn("Attempted to save Chunk at <" .. x .. ", " .. y .. ">, but it doesn't exist!")
 		return
 	end
@@ -91,4 +91,4 @@ function logic:_SaveChunk(x, y)
 	-- TODO: save chunk to json table and save it to datastore
 end
 
-return logic
+return world
