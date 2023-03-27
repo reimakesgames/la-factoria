@@ -68,27 +68,4 @@ function world:GetTile(x, y)
 	return nil
 end
 
-function world:_LoadChunk(x, y, data)
-	if self.map[x] then
-		if self.map[x][y] then
-			warn("Attempted to load Chunk at <" .. x .. ", " .. y .. ">, but it already exists!")
-		end
-	end
-
-	-- TODO: load json table into chunk and load its tiles
-end
-
-function world:_SaveChunk(x, y)
-	if not self.map[x] then
-		warn("Attempted to save Chunk at <" .. x .. ", " .. y .. ">, but it doesn't exist!")
-		return
-	end
-	if not self.map[x][y] then
-		warn("Attempted to save Chunk at <" .. x .. ", " .. y .. ">, but it doesn't exist!")
-		return
-	end
-
-	-- TODO: save chunk to json table and save it to datastore
-end
-
 return world
