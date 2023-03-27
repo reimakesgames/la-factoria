@@ -11,7 +11,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local logic = require(ReplicatedStorage.Shared.logic)
+local world = require(ReplicatedStorage.Shared.world)
 local util = require(Shared.util)
 local constants = require(Shared.constants)
 local fastInstance = require(Shared.fastInstance)
@@ -102,9 +102,9 @@ end
 
 local function FindTileUnderMouse()
 	local tx, ty = util:GetTileFromV3(Mouse.Hit.Position)
-	local tile = logic:GetTile(tx, ty)
+	local tile = world:GetTile(tx, ty)
 	UniqueBuildingIdUnderMouse = tile
-	BuildingUnderMouse = logic:GetBuilding(tile)
+	BuildingUnderMouse = world:GetBuilding(tile)
 end
 
 local function HighlightBuildingUnderMouse()
@@ -184,7 +184,7 @@ local function PlaceBuilding()
 	print("you placed a building! and now you have", Inventory[SelectedInventorySlot].Count, "left")
 	local NewBuilding = SelectedBuildingModel:Clone()
 	NewBuilding:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
-	logic:NewTile(tx, ty, Proto[SelectedBuildingName], NewBuilding)
+	world:NewTile(tx, ty, Proto[SelectedBuildingName], NewBuilding)
 	NewBuilding.Parent = workspace
 	if Inventory[SelectedInventorySlot].Count < 1 then
 		DeselectBuilding()
