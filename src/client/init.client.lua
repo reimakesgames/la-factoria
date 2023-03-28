@@ -183,16 +183,15 @@ local function PlaceBuilding()
 	local tx, ty = util:GetTileFromV3(Mouse.Hit.Position)
 
 	Inventory[SelectedInventorySlot].Count -= 1
-	print("you placed a building! and now you have", Inventory[SelectedInventorySlot].Count, "left")
+	Console:Print("Default", `Placed a building! {Inventory[SelectedInventorySlot].Count} left`)
 	local NewBuilding = SelectedBuildingModel:Clone()
 	NewBuilding:PivotTo(GetPlacementCFrame(buildingDimensions[SelectedBuildingName]))
 	world:NewTile(tx, ty, Proto[SelectedBuildingName], NewBuilding)
 	NewBuilding.Parent = workspace
 	if Inventory[SelectedInventorySlot].Count < 1 then
+		Console:Warn("Default", `You ran out of {SelectedBuildingName}!`)
 		DeselectBuilding()
-		-- remove the slot from the inventory
 		table.clear(Inventory[SelectedInventorySlot])
-		warn("no more building! bwekh! (°<°)")
 		return
 	end
 end
@@ -233,11 +232,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 
 	if slotNumber then
-		print("slot number", slotNumber)
+		Console:Print("Default", `Selected slot {slotNumber}`)
 		local buildingItem = Inventory[slotNumber]
 		if not buildingItem then return end
 		local buildingId = buildingIds[buildingItem.Name]
-		print("building name", buildingItem.Name)
+		Console:Print("Default", `Selected {buildingItem.Name}!`)
 		if buildingId then
 			SelectedBuildingId = buildingId
 			SelectedBuildingName = buildingItem.Name
@@ -261,8 +260,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			PlaceBuilding()
 		else
 			if BuildingUnderMouse then
-				print("you clicked on a building!")
+				Console:Print("Default", `Clicked on {BuildingUnderMouse.Name}!`)
 				if BuildingUnderMouse["Interact"] then
+					Console:Warn("Default", `Interacting with {BuildingUnderMouse.Name}!`)
 					if RecentInteraction then
 						RecentInteraction:Unfocus()
 					end
