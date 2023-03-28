@@ -6,7 +6,7 @@ local fastInstance = require(script.Parent.fastInstance)
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local EMIT_TO_ROBLOX_CONSOLE = true
+local EMIT_TO_ROBLOX_CONSOLE = false
 
 export type LogType = "Print" | "Warn" | "Error" | "Info"
 
@@ -73,12 +73,6 @@ function tab.new(tabName: string)
 		Parent = self.TabInstance,
 	})
 
-	self.TabInstance.ChildAdded:Connect(function()
-		if ForceGoToNewLine then
-			self.TabInstance.CanvasPosition = Vector2.new(0, 999_999_999_999)
-		end
-	end)
-
 	return self
 end
 
@@ -108,6 +102,10 @@ function tab:Log(message: string, logType: LogType)
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Parent = self.TabInstance,
 	})
+
+	if ForceGoToNewLine then
+		self.TabInstance.CanvasPosition = Vector2.new(0, 999_999_999_999)
+	end
 end
 
 local console = {}
