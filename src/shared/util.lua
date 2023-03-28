@@ -4,6 +4,8 @@ export type Type = {
 	GetChunkFromXY: (Type, x: number, y: number) -> (number, number),
 	GetLocalTileFromXY: (Type, x: number, y: number) -> number,
 	GetChunkAndLocalTileFromXY: (Type, x: number, y: number) -> (number, number, number),
+
+	ToWatts: (Type, watt: number) -> number,
 }
 
 local util = {}
@@ -50,6 +52,18 @@ function util:GetChunkAndLocalTileFromXY(x, y)
 	local chunkX, chunkY = util:GetChunkFromXY(x, y)
 	local localTile = util:GetLocalTileFromXY(x, y)
 	return chunkX, chunkY, localTile
+end
+
+local wattSuffixes = {"", "k", "M", "G", "T", "P", "E", "Z", "Y"}
+
+function util:ToWatts(watt)
+    for i = 1, #wattSuffixes do
+        watt = watt / 1000
+        if watt < 1000 then
+            return watt .. wattSuffixes[i + 1] .. "W"
+        end
+    end
+	return watt .. "W"
 end
 
 return util :: Type

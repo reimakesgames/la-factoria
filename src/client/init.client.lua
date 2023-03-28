@@ -82,6 +82,10 @@ local Inventory = {
 	{
 		Name = "wooden_chest",
 		Count = 2,
+	},
+	{
+		Name = "assembling_machine_1",
+		Count = 4,
 	}
 }
 

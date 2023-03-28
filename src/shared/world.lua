@@ -1,3 +1,4 @@
+local RunService = game:GetService("RunService")
 local util = require(script.Parent.util)
 
 local buildings = {}
@@ -65,5 +66,13 @@ function world:GetTile(x, y)
 	end
 	return nil
 end
+
+RunService.Heartbeat:Connect(function()
+	for _, building in pairs(buildings) do
+		if building["Update"] then
+			building:Update()
+		end
+	end
+end)
 
 return world
