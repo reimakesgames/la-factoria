@@ -2,6 +2,7 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local RunService = game:GetService('RunService')
+local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService('UserInputService')
 
 local Assets = ReplicatedStorage.Assets
@@ -11,6 +12,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+local Console = require(ReplicatedStorage.Shared.Console)
 local world = require(ReplicatedStorage.Shared.world)
 local util = require(Shared.util)
 local constants = require(Shared.constants)
@@ -276,3 +278,11 @@ end)
 LocalPlayer.CharacterAdded:Connect(function(newCharacter)
 	AddHardHat(newCharacter)
 end)
+
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
+
+Console:Print("Default", "Welcome to the game!")
+Console:Print("Default", "You can toggle this console by pressing the '`' key.")
