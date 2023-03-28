@@ -40,7 +40,7 @@ function world:NewTile(worldTileX, worldTileY, class, parameters)
 		self:NewChunk(chunkX, chunkY)
 		chunk = self:GetChunk(chunkX, chunkY)
 	end
-	local building = class.new(parameters)
+	local building = require(class).new(parameters)
 	buildings[CurrentUniqueBuildingId] = building
 	building.UniqueBuildingId = CurrentUniqueBuildingId
 	chunk[localTile] = CurrentUniqueBuildingId
