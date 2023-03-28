@@ -8,6 +8,8 @@ setmetatable(wooden_chest, container)
 
 function wooden_chest.new()
 	local self = setmetatable({
+		Name = "Wooden Chest",
+
 		InventorySize = 16,
 
 		Items = {
