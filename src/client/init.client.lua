@@ -17,6 +17,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
+local wooden_chest = ReplicatedStorage.Shared.Class.wooden_chest
 local Console = require(Shared.Console)
 local CONSTANTS = require(Shared.CONSTANTS)
 local fastInstance = require(Shared.fastInstance)
@@ -117,10 +118,25 @@ end
 local function DeselectBuilding()
 end
 local function PlaceBuilding()
+	local worldTileX, worldTileY = GetMouseTilePosition()
+
+	local class = wooden_chest
+
+	local building = World:NewTile(worldTileX, worldTileY, class)
+
+	local v = Assets.buildings[class.Name]:Clone()
+	v:PivotTo(GetTilePlacementPosition(Vector2.new(1, 1)))
+	v.Parent = workspace
+	building.__model = v
 end
 local function CopyBuildingProperties()
 end
 local function PasteBuildingProperties()
+end
+local function OpenBuilding()
+	local worldTileX, worldTileY = GetMouseTilePosition()
+	local Tile = World:GetTile(worldTileX, worldTileY)
+	Tile:Damage(1)
 end
 
 RunService.Heartbeat:Connect(function()
@@ -139,6 +155,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		elseif Rotation < 0 then
 			Rotation = 3
 		end
+	end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		PlaceBuilding()
+	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+		OpenBuilding()
 	end
 end)
 
