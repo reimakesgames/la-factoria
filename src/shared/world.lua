@@ -83,9 +83,11 @@ function World:NewTile(worldTileX, worldTileY, class, parameters)
 	end
 	local building = require(class).new(parameters)
 	Buildings[CurrentUniqueBuildingId] = building
-	building.UniqueBuildingId = CurrentUniqueBuildingId
+	building.__uniqueBuildingId = CurrentUniqueBuildingId
 	chunk[localTile] = CurrentUniqueBuildingId
 	CurrentUniqueBuildingId = CurrentUniqueBuildingId + 1
+
+	return building
 end
 
 --[[
@@ -99,13 +101,32 @@ function World:GetTile(x, y)
 	local localTile = World:GetLocalTileFromTilePosition(x, y)
 	local chunk = World:GetChunk(chunkX, chunkY)
 	if chunk then
-		return chunk[localTile]
+		return Buildings[chunk[localTile]]
 	end
 	return nil
 end
 
-function World:GetBuildingByUniqueId(uniqueBuildingId)
-	return Buildings[uniqueBuildingId]
+function World:RemoveTile(x, y)
+	local chunkX, chunkY = World:GetChunkFromTilePosition(x, y)
+	local localTile = World:GetLocalTileFromTilePosition(x, y)
+	local chunk = World:GetChunk(chunkX, chunkY)
+	if chunk then
+		local building = Buildings[chunk[localTile]]
+		if building then
+			building:Destroy()
+		end
+		chunk[localTile] = nil
+	end
+end
+
+--[[
+	This function will remove the building at the tile position.
+]]
+function World:RemoveTileByUniqueId(uniqueId)
+	if not Buildings[uniqueId].__destroying then
+		Buildings[uniqueId]:Destroy()
+	end
+	Buildings[uniqueId] = nil
 end
 
 RunService.Heartbeat:Connect(function()
