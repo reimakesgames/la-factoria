@@ -1,8 +1,9 @@
 [package]
-name = "shiro/la-factoria"
+name = "reimakesgames/manufacturing-line"
 version = "0.1.0"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
 [dependencies]
 signal = "sleitnick/signal@1.4.2"
+parallel-worker = "maximumadhd/parallel-worker@1.0.0"

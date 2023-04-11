@@ -3,9 +3,14 @@
 registry = "test"
 
 [[package]]
+name = "maximumadhd/parallel-worker"
+version = "1.0.0"
+dependencies = []
+
+[[package]]
 name = "shiro/la-factoria"
 version = "0.1.0"
-dependencies = [["signal", "sleitnick/signal@1.4.2"]]
+dependencies = [["parallel-worker", "maximumadhd/parallel-worker@1.0.0"], ["signal", "sleitnick/signal@1.4.2"]]
 
 [[package]]
 name = "sleitnick/signal"
