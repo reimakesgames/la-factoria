@@ -7,3 +7,4 @@ realm = "shared"
 [dependencies]
 signal = "sleitnick/signal@1.4.2"
 parallel-worker = "maximumadhd/parallel-worker@1.0.0"
+matter = "evaera/matter@0.6.2"
