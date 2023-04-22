@@ -46,19 +46,26 @@ folder.Parent = workspace
 while true do
 	task.wait(1)
 	folder:ClearAllChildren()
-	pcall(function()
-		for y, stuff in map.jimmy[0] do
-			for num, id in stuff do
-				local x = num % CONSTANTS.TILES_PER_CHUNK
-				local y = math.floor(num / CONSTANTS.TILES_PER_CHUNK)
-				local part = Instance.new("Part")
-				part.Anchored = true
-				part.CanCollide = false
-				part.Size = Vector3.new(4, 1, 4)
-				part.Position = Vector3.new(x * 4, 4, y * 4) + Vector3.new(2, 0, 2)
-				part.Transparency = 0.5
-				part.Parent = folder
+	print(map)
+	local _, e = pcall(function()
+		for _, chunk in map.worldMap[0] do
+			for i = 1, CONSTANTS.TILES_PER_CHUNK ^ 2 do
+				local tile = chunk[i]
+				if not tile then
+					continue
+				end
+				local display = Instance.new("Part")
+				display.Anchored = true
+				display.Transparency = 0.5
+				display.Size = Vector3.new(4, 1, 4)
+				display.Position = Vector3.new(
+					((i - 1) % CONSTANTS.TILES_PER_CHUNK) * 4,
+					0,
+					math.floor((i - 1) / CONSTANTS.TILES_PER_CHUNK) * 4
+				) + Vector3.new(2, 4, 2)
+				display.Parent = folder
 			end
 		end
 	end)
+	print(e)
 end

@@ -30,14 +30,13 @@ end
 
 return function(world)
 	for id, data in world:query(constructionData) do
-		print("rahhh")
 		local model = data.model:Clone()
 		if model then
 			local TileCFrame = GetTilePlacementPosition(data.hit, data.rotation, Vector2.new(data.dimX, data.dimY))
 			model:SetPrimaryPartCFrame(TileCFrame)
 			model.Parent = workspace
 
-			local worldId = world:insert(id, Building({
+			world:insert(id, Building({
 				model = model,
 				chunkX = math.floor(TileCFrame.Position.X / CONSTANTS.CHUNK_SIZE),
 				chunkY = math.floor(TileCFrame.Position.Z / CONSTANTS.CHUNK_SIZE),
@@ -50,24 +49,16 @@ return function(world)
 			}))
 			model.Parent = workspace
 			world:remove(id, constructionData)
-			map.assignIdToTile(worldId, math.floor(TileCFrame.X / CONSTANTS.TILE_SIZE), math.floor(TileCFrame.Z / CONSTANTS.TILE_SIZE))
-			-- fill in the rest of the tiles if the building is bigger than 1x1
-			local xEven = data.dimX % 2 == 0
-			local yEven = data.dimY % 2 == 0
 
-			local xStart = data.dimX % 2 == 0 and -1 or 0
-			local yStart = data.dimY % 2 == 0 and -1 or 0
+			local tileX = math.floor(TileCFrame.X / CONSTANTS.TILE_SIZE)
+			local tileY = math.floor(TileCFrame.Z / CONSTANTS.TILE_SIZE)
 
-			for x = xStart, data.dimX - 1 do
-				for y = yStart, data.dimY - 1 do
-					if x == 0 and y == 0 then
-						continue
-					end
-					local xTile = math.floor(TileCFrame.X / CONSTANTS.TILE_SIZE) + x - 1
-					local yTile = math.floor(TileCFrame.Z / CONSTANTS.TILE_SIZE) + y - 1
-					map.assignIdToTile(tostring(worldId), xTile, yTile)
-				end
+			map.assignIdToTile(id, tileX, tileY)
+			if data.dimX == 1 and data.dimY == 1 then
+				continue
 			end
+
+			-- ! TODO: fill in the rest of the tiles, if the building is bigger than 1x1
 		end
 	end
 end
